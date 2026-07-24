@@ -33,11 +33,14 @@ const NOTE_LEVELS = {
 };
 
 const DESCRIPTOR_LIBRARY = [
-  "fruity", "citrus", "tropical", "berry", "green", "floral", "rose", "jasmine",
-  "creamy", "dairy", "buttery", "waxy", "fatty", "woody", "earthy", "mossy",
-  "spicy", "warm", "roasted", "nutty", "smoky", "toasted", "sulfurous",
-  "animalic", "musky", "herbal", "minty", "camphoraceous", "sweet", "caramel",
-  "honey", "vanilla", "balsamic", "medicinal", "phenolic", "winey", "cheesy",
+  "amber", "animalic", "balsamic", "berry", "bitter", "burnt", "buttery", "cabbage",
+  "camphoraceous", "candy", "caramel", "cheesy", "chocolate", "citrus", "cool", "creamy",
+  "dairy", "earthy", "ethereal", "fatty", "fecal", "fermented", "fishy", "floral",
+  "fresh", "fruity", "fusel", "grassy", "green", "herbal", "honey", "jammy",
+  "jasmine", "leathery", "malty", "meaty", "medicinal", "milky", "minty", "mossy",
+  "musky", "nutty", "oily", "phenolic", "roasted", "rose", "smoky", "spicy",
+  "sulfurous", "sweet", "toasted", "tropical", "vanilla", "warm", "waxy", "winey",
+  "woody",
 ];
 
 // Ethanol is the implicit carrier/solvent: every formulation totals 100%,
@@ -486,29 +489,33 @@ export default function FlavorBench() {
   };
 
   const filteredIngredients = useMemo(() => {
-    return ingredients.filter((ing) => {
-      const q = query.toLowerCase();
-      const matchesQuery = !q || ing.name.toLowerCase().includes(q) || (ing.altNames || []).some((n) => n.toLowerCase().includes(q)) || ing.cas.includes(q) || ing.descriptors.some((d) => d.includes(q));
-      const matchesClass = activeClasses.length === 0 || activeClasses.includes(ing.class);
-      const matchesDesc = activeDescs.every((d) => ing.descriptors.includes(d));
-      const matchesNote = activeNotes.length === 0 || activeNotes.includes(ing.note);
-      return matchesQuery && matchesClass && matchesDesc && matchesNote;
-    });
+    return ingredients
+      .filter((ing) => {
+        const q = query.toLowerCase();
+        const matchesQuery = !q || ing.name.toLowerCase().includes(q) || (ing.altNames || []).some((n) => n.toLowerCase().includes(q)) || ing.cas.includes(q) || ing.descriptors.some((d) => d.includes(q));
+        const matchesClass = activeClasses.length === 0 || activeClasses.includes(ing.class);
+        const matchesDesc = activeDescs.every((d) => ing.descriptors.includes(d));
+        const matchesNote = activeNotes.length === 0 || activeNotes.includes(ing.note);
+        return matchesQuery && matchesClass && matchesDesc && matchesNote;
+      })
+      .sort((a, b) => a.name.localeCompare(b.name));
   }, [ingredients, query, activeClasses, activeDescs, activeNotes]);
 
   const filteredFormulations = useMemo(() => {
-    return formulations.filter((f) => {
-      const q = query.toLowerCase();
-      const matchesQuery = !q || f.name.toLowerCase().includes(q) || f.subtitle.toLowerCase().includes(q) || f.components.some((c) => {
-        const ci = ingMap[c.ingId];
-        return ci && (ci.name.toLowerCase().includes(q) || (ci.altNames || []).some((n) => n.toLowerCase().includes(q)));
-      });
-      const comps = f.components.map((c) => ingMap[c.ingId]).filter(Boolean);
-      const matchesClass = activeClasses.length === 0 || comps.some((i) => activeClasses.includes(i.class));
-      const matchesDesc = activeDescs.every((d) => comps.some((i) => i.descriptors.includes(d)));
-      const matchesNote = activeNotes.length === 0 || comps.some((i) => activeNotes.includes(i.note));
-      return matchesQuery && matchesClass && matchesDesc && matchesNote;
-    });
+    return formulations
+      .filter((f) => {
+        const q = query.toLowerCase();
+        const matchesQuery = !q || f.name.toLowerCase().includes(q) || f.subtitle.toLowerCase().includes(q) || f.components.some((c) => {
+          const ci = ingMap[c.ingId];
+          return ci && (ci.name.toLowerCase().includes(q) || (ci.altNames || []).some((n) => n.toLowerCase().includes(q)));
+        });
+        const comps = f.components.map((c) => ingMap[c.ingId]).filter(Boolean);
+        const matchesClass = activeClasses.length === 0 || comps.some((i) => activeClasses.includes(i.class));
+        const matchesDesc = activeDescs.every((d) => comps.some((i) => i.descriptors.includes(d)));
+        const matchesNote = activeNotes.length === 0 || comps.some((i) => activeNotes.includes(i.note));
+        return matchesQuery && matchesClass && matchesDesc && matchesNote;
+      })
+      .sort((a, b) => a.name.localeCompare(b.name));
   }, [formulations, query, activeClasses, activeDescs, activeNotes, ingMap]);
 
   const selectedForm = formulations.find((f) => f.id === selectedFormId);
@@ -546,7 +553,7 @@ export default function FlavorBench() {
                 <span className="font-mono text-xs tracking-[0.3em] uppercase" style={{ color: "var(--accent)" }}>flavor & fragrance bench</span>
                 <SaveIndicator status={saveStatus} />
               </div>
-              <h1 className="font-display text-5xl md:text-6xl font-semibold leading-none">Formulary</h1>
+              <h1 className="font-display text-5xl md:text-6xl font-semibold leading-none">FlavorSweden</h1>
               <p className="mt-3 text-sm md:text-base max-w-md" style={{ color: "var(--text-muted)" }}>
                 {ingredients.length} materials in the library · {formulations.length} formulations on the bench. Saved automatically.
               </p>
@@ -719,12 +726,12 @@ export default function FlavorBench() {
           ) : (
             filteredIngredients.length === 0 ? <EmptyState label="No ingredients match." /> : (
               <div className="rounded-lg overflow-hidden" style={{ border: "1px solid var(--border)" }}>
-                <div className="grid grid-cols-[1fr_auto_auto] gap-3 px-4 py-2.5 font-mono text-[10px] uppercase tracking-wider" style={{ background: "var(--surface)", color: "var(--text-faintest)" }}>
-                  <span>Material</span><span>Class</span><span>Note</span>
+                <div className="px-4 py-2.5 font-mono text-[10px] uppercase tracking-wider" style={{ background: "var(--surface)", color: "var(--text-faintest)" }}>
+                  Material
                 </div>
                 {filteredIngredients.map((ing, idx) => (
                   <button key={ing.id} onClick={() => { setSelectedIngId(ing.id); setView("ingredientDetail"); }} className="w-full text-left px-4 py-3 transition-colors" style={{ background: idx % 2 === 0 ? "var(--bg)" : "var(--surface-alt2)", borderTop: "1px solid var(--border-faint)" }}>
-                    <div className="grid grid-cols-[auto_1fr_auto_auto] gap-3 items-center">
+                    <div className="grid grid-cols-[auto_1fr] gap-3 items-center">
                       <ImageAvatar
                         image={ing.image}
                         onChange={(dataUrl) => updateIngredient(ing.id, { image: dataUrl })}
@@ -744,6 +751,8 @@ export default function FlavorBench() {
                           {(ing.concentration ?? 100) < 100 && ` · ${ing.concentration}% conc.`}
                         </div>
                       </div>
+                    </div>
+                    <div className="flex flex-wrap gap-1 mt-2">
                       <ClassPill classId={ing.class} />
                       <NotePill note={ing.note} />
                     </div>
