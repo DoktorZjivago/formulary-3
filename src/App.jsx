@@ -555,7 +555,7 @@ export default function FlavorBench() {
                 <span className="font-mono text-xs tracking-[0.3em] uppercase" style={{ color: "var(--accent)" }}>flavor & fragrance bench</span>
                 <SaveIndicator status={saveStatus} />
               </div>
-              <h1 className="font-display text-5xl md:text-6xl font-semibold leading-none">FlavorSweden</h1>
+              <h1 className="font-display text-5xl md:text-6xl font-semibold leading-none">FlavorBench</h1>
               <p className="mt-3 text-sm md:text-base max-w-md" style={{ color: "var(--text-muted)" }}>
                 {ingredients.length} materials in the library · {formulations.length} formulations on the bench. Saved automatically.
               </p>
@@ -740,10 +740,10 @@ export default function FlavorBench() {
                         size={34}
                         fallbackIcon={<Beaker size={15} style={{ color: "var(--text-faint)" }} />}
                       />
-                      <div>
+                      <div className="min-w-0">
                         <div className="text-sm" style={{ color: "var(--text)" }}>{ing.name}</div>
                         {ing.altNames && ing.altNames.length > 0 && (
-                          <div className="text-[11px] italic truncate" style={{ color: "var(--text-faint)" }}>
+                          <div className="text-[11px] italic" style={{ color: "var(--text-faint)", wordBreak: "break-word" }}>
                             aka {ing.altNames.join(", ")}
                           </div>
                         )}
