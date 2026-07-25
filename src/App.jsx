@@ -477,9 +477,11 @@ export default function FlavorBench() {
     setIngredients((prev) => prev.filter((i) => i.id !== id));
     setFormulations((prev) => prev.map((f) => ({ ...f, components: f.components.filter((c) => c.ingId !== id) })));
   };
-  const addIngredient = () => {
+  const addIngredient = (data) => {
     const id = `i${Date.now()}`;
-    const fresh = { id, name: "New material", altNames: [], cas: "", class: "ester", note: "mid", threshold: "", avgUsage: "", maxUsage: "", molarMass: "", concentration: 100, image: "", descriptors: [] };
+    const fresh = data
+      ? { id, altNames: [], cas: "", threshold: "", avgUsage: "", maxUsage: "", molarMass: "", concentration: 100, image: "", descriptors: [], ...data }
+      : { id, name: "New material", altNames: [], cas: "", class: "ester", note: "mid", threshold: "", avgUsage: "", maxUsage: "", molarMass: "", concentration: 100, image: "", descriptors: [] };
     setIngredients((prev) => [fresh, ...prev]);
     return id;
   };
@@ -580,7 +582,7 @@ export default function FlavorBench() {
               <div className="flex items-center gap-2 self-start md:self-auto">
                 <ThemeToggle theme={theme} onToggle={toggleTheme} />
                 <button
-                  onClick={() => { const id = addIngredient(); setSelectedIngId(id); setView("ingredientDetail"); }}
+                  onClick={() => setView("newIngredient")}
                   className="flex items-center gap-2 px-4 py-2.5 rounded-md font-medium text-sm transition-transform hover:-translate-y-0.5"
                   style={{ background: "var(--accent)", color: "var(--accent-contrast)" }}
                 >
@@ -825,6 +827,13 @@ export default function FlavorBench() {
           ingredients={ingredients}
           onCancel={() => setView("grid")}
           onSave={(form) => { setFormulations((prev) => [{ ...form, id: `f${Date.now()}` }, ...prev]); setView("grid"); }}
+        />
+      )}
+
+      {view === "newIngredient" && (
+        <NewIngredientForm
+          onCancel={() => setView("grid")}
+          onSave={(data) => { const id = addIngredient(data); setSelectedIngId(id); setView("ingredientDetail"); }}
         />
       )}
 
@@ -1881,6 +1890,144 @@ function Top20View({ formulations, onBack, onOpenFormulation }) {
           ))}
         </div>
       )}
+    </div>
+  );
+}
+
+// ---------- New ingredient form ----------
+function NewIngredientForm({ onCancel, onSave }) {
+  const [name, setName] = useState("");
+  const [altNamesInput, setAltNamesInput] = useState("");
+  const [cas, setCas] = useState("");
+  const [chemClass, setChemClass] = useState("ester");
+  const [note, setNote] = useState("mid");
+  const [threshold, setThreshold] = useState("");
+  const [avgUsage, setAvgUsage] = useState("");
+  const [maxUsage, setMaxUsage] = useState("");
+  const [molarMass, setMolarMass] = useState("");
+  const [concentration, setConcentration] = useState(100);
+  const [descriptors, setDescriptors] = useState([]);
+  const [descInput, setDescInput] = useState("");
+
+  const canSave = name.trim().length > 0;
+
+  const toggleDesc = (d) => {
+    setDescriptors((prev) => (prev.includes(d) ? prev.filter((x) => x !== d) : [...prev, d]));
+  };
+  const addCustomDesc = (d) => {
+    const clean = d.trim().toLowerCase();
+    if (!clean || descriptors.includes(clean)) return;
+    setDescriptors((prev) => [...prev, clean]);
+    setDescInput("");
+  };
+
+  const handleSave = () => {
+    if (!canSave) return;
+    const altNames = altNamesInput.split(",").map((s) => s.trim()).filter(Boolean);
+    onSave({
+      name: name.trim(),
+      altNames,
+      cas: cas.trim(),
+      class: chemClass,
+      note,
+      threshold: threshold.trim(),
+      avgUsage: avgUsage.trim(),
+      maxUsage: maxUsage.trim(),
+      molarMass: molarMass === "" ? "" : (parseFloat(molarMass) || ""),
+      concentration: Math.min(100, Math.max(1, parseFloat(concentration) || 100)),
+      image: "",
+      descriptors,
+    });
+  };
+
+  return (
+    <div className="max-w-2xl mx-auto px-5 md:px-8 py-10">
+      <button onClick={onCancel} className="flex items-center gap-1.5 font-mono text-xs uppercase tracking-wide mb-8" style={{ color: "var(--accent)" }}>
+        <ChevronLeft size={14} /> cancel
+      </button>
+      <h1 className="font-display text-4xl font-semibold mb-8">New material</h1>
+      <div className="space-y-6">
+        <div className="grid md:grid-cols-2 gap-4">
+          <Field label="Name"><input value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Ethyl butyrate" style={inputStyle} /></Field>
+          <Field label="CAS number"><input value={cas} onChange={(e) => setCas(e.target.value)} placeholder="e.g. 105-54-4" style={inputStyle} /></Field>
+        </div>
+
+        <Field label="Alternative names (comma-separated, optional)">
+          <input value={altNamesInput} onChange={(e) => setAltNamesInput(e.target.value)} placeholder="e.g. Ethyl butanoate, Butyric ether" style={inputStyle} />
+        </Field>
+
+        <div className="grid md:grid-cols-2 gap-4">
+          <Field label="Chemical class">
+            <select value={chemClass} onChange={(e) => setChemClass(e.target.value)} style={inputStyle}>
+              {Object.entries(CHEM_CLASSES).map(([key, c]) => (
+                <option key={key} value={key}>{c.label}</option>
+              ))}
+            </select>
+          </Field>
+          <Field label="Volatility / note">
+            <select value={note} onChange={(e) => setNote(e.target.value)} style={inputStyle}>
+              {Object.entries(NOTE_LEVELS).map(([key, n]) => (
+                <option key={key} value={key}>{n.label} — {n.desc}</option>
+              ))}
+            </select>
+          </Field>
+        </div>
+
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+          <Field label="Odor threshold"><input value={threshold} onChange={(e) => setThreshold(e.target.value)} placeholder="e.g. 0.002 ppm" style={inputStyle} /></Field>
+          <Field label="Avg usage"><input value={avgUsage} onChange={(e) => setAvgUsage(e.target.value)} placeholder="e.g. 5 ppm" style={inputStyle} /></Field>
+          <Field label="Max usage"><input value={maxUsage} onChange={(e) => setMaxUsage(e.target.value)} placeholder="e.g. 20 ppm" style={inputStyle} /></Field>
+          <Field label="Molar mass (g/mol)"><input type="number" step="0.01" value={molarMass} onChange={(e) => setMolarMass(e.target.value)} placeholder="e.g. 116.16" style={inputStyle} /></Field>
+        </div>
+
+        <Field label="Concentration (1–100%)">
+          <div className="flex items-baseline gap-2">
+            <input
+              type="number" min="1" max="100" step="0.1"
+              value={concentration}
+              onChange={(e) => setConcentration(e.target.value)}
+              style={{ ...inputStyle, width: 100 }}
+            />
+            <span className="font-mono text-sm" style={{ color: "var(--text-faint)" }}>% — 100% = neat/pure material</span>
+          </div>
+        </Field>
+
+        <Field label="Taste / odor profile">
+          <div className="flex flex-wrap gap-1.5 mb-3">
+            {descriptors.map((d) => (
+              <DescPill key={d} desc={d} size="md" onRemove={() => toggleDesc(d)} />
+            ))}
+            {descriptors.length === 0 && <span className="text-xs" style={{ color: "var(--text-faintest)" }}>No descriptors selected yet.</span>}
+          </div>
+          <div className="flex flex-wrap gap-1.5 mb-3">
+            {DESCRIPTOR_LIBRARY.filter((d) => !descriptors.includes(d)).map((d) => (
+              <DescPill key={d} desc={d} onClick={() => toggleDesc(d)} />
+            ))}
+          </div>
+          <div className="flex gap-2">
+            <input
+              value={descInput}
+              onChange={(e) => setDescInput(e.target.value)}
+              onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addCustomDesc(descInput); } }}
+              placeholder="Add a custom descriptor…"
+              className="flex-1 px-3 py-2 rounded text-sm outline-none"
+              style={{ background: "var(--bg)", border: "1px solid var(--border)", color: "var(--text)" }}
+            />
+            <button onClick={() => addCustomDesc(descInput)} className="px-3 py-2 rounded text-sm font-mono" style={{ background: "var(--border)", color: "var(--text)" }}>
+              <Plus size={14} />
+            </button>
+          </div>
+        </Field>
+
+        <button
+          disabled={!canSave}
+          onClick={handleSave}
+          className="px-5 py-3 rounded-md font-medium text-sm"
+          style={{ background: canSave ? "var(--accent)" : "var(--border)", color: canSave ? "var(--accent-contrast)" : "var(--text-faintest)", cursor: canSave ? "pointer" : "not-allowed" }}
+        >
+          Save material
+        </button>
+      </div>
     </div>
   );
 }
